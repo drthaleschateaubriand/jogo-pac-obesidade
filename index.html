@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pac-Obesidade: Fisiopatologia e Hormônios</title>
+    <style>
+        /* --- ESTILOS GERAIS E RESET --- */
+        :root {
+            --cor-primaria: #0a3d62;
+            --cor-secundaria: #3c6382;
+            --cor-destaque: #feca57;
+            --cor-sucesso: #1dd1a1;
+            --cor-erro: #ff6b6b;
+            --cor-texto: #ffffff;
+            --cor-fundo: #0c2431;
+            --fonte-principal: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--fonte-principal);
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- CONTAINER PRINCIPAL DO JOGO --- */
+        #game-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+        }
+
+        /* --- HUD (PAINEL DE INFORMAÇÕES) --- */
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 10px 20px;
+            background-color: var(--cor-primaria);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #hud span {
+            font-weight: bold;
+        }
+
+        /* --- CANVAS DO JOGO --- */
+        #gameCanvas {
+            background-color: #000;
+            border-radius: 8px;
+            border: 4px solid var(--cor-secundaria);
+            width: 100%;
+            aspect-ratio: 1 / 1; /* Mantém o canvas quadrado */
+            max-width: 600px; /* Limite para telas grandes */
+        }
+
+        /* --- CONTROLES DE TOQUE (MOBILE) --- */
+        #touch-controls {
+            display: none; /* Oculto por padrão */
+            margin-top: 15px;
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10+ */
+            user-select: none; /* Padrão */
+        }
+
+        #touch-controls .d-pad {
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left . right"
+                ". down .";
+            gap: 10px;
+        }
+
+        #touch-controls button {
+            background-color: var(--cor-secundaria);
+            color: var(--cor-texto);
+            border: 2px solid var(--cor-primaria);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 2em;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #touch-controls button:active {
+            background-color: var(--cor-destaque);
+        }
+
+        #up-btn { grid-area: up; }
+        #down-btn { grid-area: down; }
+        #left-btn { grid-area: left; }
+        #right-btn { grid-area: right; }
+
+        @media (hover: none) and (pointer: coarse) {
+            #touch-controls {
+                display: block;
+            }
+        }
+
+        /* --- MODAIS (TELAS DE MENU, QUIZ, ETC.) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+
+        .modal-content {
+            background-color: var(--cor-primaria);
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid var(--cor-destaque);
+            text-align: center;
+            max-width: 95%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .modal-content h1, .modal-content h2 {
+            color: var(--cor-destaque);
+            margin-bottom: 20px;
+        }
+        
+        .modal-content p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal-content .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--cor-primaria);
+            background-color: var(--cor-destaque);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .modal-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(254, 202, 87, 0.4);
+        }
+        
+        .modal-button.secondary {
+            background-color: var(--cor-secundaria);
+            color: var(--cor-texto);
+        }
+        .modal-button.secondary:hover {
+            box-shadow: 0 4px 10px rgba(60, 99, 130, 0.4);
+        }
+
+        /* --- MODAL DE QUIZ (ESTILOS ESPECÍFICOS E RESPONSIVOS) --- */
+        #quiz-modal .modal-content {
+            width: 70vw;
+            min-height: 50vh;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #pergunta-texto {
+            font-size: 20px;
+            font-weight: bold;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        #alternativas-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .alternativa-btn {
+            padding: 15px;
+            font-size: 18px;
+            text-align: left;
+            background-color: var(--cor-secundaria);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--cor-texto);
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            line-height: 1.5;
+        }
+
+        .alternativa-btn:hover {
+            border-color: var(--cor-destaque);
+        }
+        
+        .alternativa-btn.correta {
+            background-color: var(--cor-sucesso) !important;
+            border-color: var(--cor-sucesso) !important;
+            color: #000;
+        }
+        
+        .alternativa-btn.errada {
+            background-color: var(--cor-erro) !important;
+            border-color: var(--cor-erro) !important;
+            color: #000;
+        }
+        
+        .alternativa-btn.disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        #feedback-quiz {
+            margin-top: 15px;
+            font-size: 1.1em;
+        }
+
+        #explicacao-curta {
+            font-style: italic;
+            color: #ccc;
+        }
+        
+        #aprofundar-container {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        #btn-aprofundar {
+            display: none; /* Aparece após a resposta */
+            margin-bottom: 10px;
+        }
+        
+        #painel-aprofundar {
+            background-color: rgba(0,0,0,0.2);
+            border-left: 4px solid var(--cor-destaque);
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
+        }
+        
+        #painel-aprofundar.visivel {
+            max-height: 300px; /* Altura suficiente para o texto */
+            padding: 15px;
+        }
+        
+        #painel-aprofundar p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* Media Queries para responsividade do Modal de Quiz */
+        @media (max-width: 768px) {
+            #quiz-modal .modal-content {
+                width: 90vw;
+                min-height: 60vh;
+            }
+
+            #pergunta-texto {
+                font-size: 18px;
+            }
+
+            .alternativa-btn {
+                font-size: 16px;
+                min-height: 44px; /* Área de toque mínima */
+            }
+        }
+        
+        /* --- TOAST DE FEEDBACK --- */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: var(--cor-texto);
+            font-weight: bold;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.5s, transform 0.5s;
+            pointer-events: none;
+        }
+        
+        #toast.show {
+            opacity: 1;
+            transform: translate(-50%, -10px);
+        }
+        
+        #toast.success { background-color: var(--cor-sucesso); }
+        #toast.error { background-color: var(--cor-erro); }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- HUD - Painel de Informações -->
+        <div id="hud">
+            <div>Vidas: <span id="vidas">3</span></div>
+            <div>Pontos: <span id="pontos">0</span></div>
+            <div>Itens: <span id="itens-restantes">0</span></div>
+            <div>Fase: <span id="fase-atual">1</span></div>
+        </div>
+
+        <!-- Canvas do Jogo -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Controles de Toque para Mobile -->
+        <div id="touch-controls">
+            <div class="d-pad">
+                <button id="up-btn">▲</button>
+                <button id="left-btn">◄</button>
+                <button id="right-btn">►</button>
+                <button id="down-btn">▼</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tela Inicial (Modal) -->
+    <div id="start-screen" class="modal-overlay">
+        <div class="modal-content">
+            <h1>Pac-Obesidade</h1>
+            <h2>Fisiopatologia e Hormônios</h2>
+            <div class="button-group">
+                <button id="btn-jogar" class="modal-button">Jogar</button>
+                <button id="btn-como-jogar" class="modal-button secondary">Como Jogar</button>
+                <button id="btn-creditos" class="modal-button secondary">Créditos</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tela de Como Jogar (Modal) -->
+    <div id="how-to-play-screen" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2>Como Jogar</h2>
+            <p><strong>Objetivo:</strong> Colete todos os potes de Whey (W) e Creatina (C) para vencer a fase.</p>
+            <p><strong>Controles:</strong> Use as setas do teclado ou os botões na tela para se mover.</p>
+            <p><strong>Inimigos:</strong> Evite os homens obesos. Se for pego, você terá que responder a uma pergunta sobre a fisiopatologia da obesidade.</p>
+            <p><strong>Quiz:</strong> Se acertar a pergunta, você escapa! Se errar, perde uma vida e volta ao início.</p>
+            <p><strong>Dica:</strong> Após cada pergunta, use o botão "Aprofundar no assunto" para aprender mais!</p>
+            <button id="btn-voltar-menu1" class="modal-button">Voltar</button>
+        </div>
+    </div>
+
+    <!-- Tela de Créditos (Modal) -->
+    <div id="credits-screen" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2>Créditos</h2>
+            <p>Elaborado pelo <strong>Doutor Thales Chateaubriand</strong></p>
+            <p>Jogo interativo para ensinar médicos e pacientes.</p>
+            <button id="btn-voltar-menu2" class="modal-button">Voltar</button>
+        </div>
+    </div>
+    
+    <!-- Modal do Quiz -->
+    <div id="quiz-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 id="pergunta-texto">Pergunta sobre fisiopatologia...</h2>
+            <div id="alternativas-container">
+                <!-- Botões de alternativa serão gerados aqui -->
+            </div>
+            <div id="feedback-quiz">
+                <p id="explicacao-curta"></p>
+            </div>
+            <div id="aprofundar-container">
+                <button id="btn-aprofundar" class="modal-button secondary">Aprofundar no assunto</button>
+                <div id="painel-aprofundar">
+                    <p id="texto-aprofundado"></p>
+                </div>
+            </div>
+            <button id="btn-continuar-jogo" class="modal-button" style="display: none;">Continuar</button>
+        </div>
+    </div>
+    
+    <!-- Modal de Fim de Jogo -->
+    <div id="game-over-screen" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 id="game-over-title">Fim de Jogo</h2>
+            <p id="game-over-text">Você ficou sem vidas!</p>
+            <p>Pontuação Final: <span id="final-score">0</span></p>
+            <button id="btn-reiniciar" class="modal-button">Jogar Novamente</button>
+        </div>
+    </div>
+    
+    <!-- Toast de Feedback -->
+    <div id="toast"></div>
+
+
+    <script>
+    // --- INICIALIZAÇÃO E VARIÁVEIS GLOBAIS ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Referências de UI
+        const hud = {
+            vidas: document.getElementById('vidas'),
+            pontos: document.getElementById('pontos'),
+            itensRestantes: document.getElementById('itens-restantes'),
+            faseAtual: document.getElementById('fase-atual'),
+        };
+        const modals = {
+            start: document.getElementById('start-screen'),
+            howToPlay: document.getElementById('how-to-play-screen'),
+            credits: document.getElementById('credits-screen'),
+            quiz: document.getElementById('quiz-modal'),
+            gameOver: document.getElementById('game-over-screen'),
+        };
+        const quizUI = {
+            pergunta: document.getElementById('pergunta-texto'),
+            alternativas: document.getElementById('alternativas-container'),
+            feedback: document.getElementById('feedback-quiz'),
+            explicacaoCurta: document.getElementById('explicacao-curta'),
+            btnAprofundar: document.getElementById('btn-aprofundar'),
+            painelAprofundar: document.getElementById('painel-aprofundar'),
+            textoAprofundado: document.getElementById('texto-aprofundado'),
+            btnContinuar: document.getElementById('btn-continuar-jogo'),
+        };
+        const gameOverUI = {
+            title: document.getElementById('game-over-title'),
+            text: document.getElementById('game-over-text'),
+            score: document.getElementById('final-score'),
+        };
+        const toast = document.getElementById('toast');
+
+        // Configurações do Jogo
+        const config = {
+            tileSize: 20, // Tamanho de cada célula do labirinto
+            playerSpeed: 2,
+            enemySpeed: 1,
+        };
+
+        // Estado do Jogo
+        let state = {
+            gameStatus: 'startScreen', // 'playing', 'paused', 'quiz', 'gameOver', 'levelComplete'
+            level: 1,
+            lives: 3,
+            score: 0,
+            collectibles: [],
+            enemies: [],
+            player: null,
+            map: [],
+            currentQuestion: null,
+            lastAnimationTime: 0,
+            animationFrameId: null,
+        };
+
+        // --- BANCO DE PERGUNTAS ---
+        const questionPool = [
+            {
+                pergunta: "Qual hormônio, produzido pelas células de gordura, é conhecido como o 'hormônio da saciedade' e sinaliza ao cérebro que o corpo tem energia suficiente?",
+                alternativas: ["A) Grelina", "B) Insulina", "C) Leptina", "D) Cortisol"],
+                correta: "C",
+                explicacaoCurta: "A Leptina é o principal hormônio que informa ao cérebro sobre as reservas de gordura, suprimindo o apetite.",
+                aprofundar: "Produzida pelos adipócitos, a leptina atua no hipotálamo para reduzir a ingestão alimentar e aumentar o gasto energético. Na obesidade, frequentemente ocorre 'resistência à leptina', onde o cérebro não responde adequadamente aos seus sinais, mesmo com níveis elevados, perpetuando a fome e o armazenamento de gordura."
+            },
+            {
+                pergunta: "Qual hormônio é produzido principalmente no estômago e é conhecido como o 'hormônio da fome', estimulando o apetite antes das refeições?",
+                alternativas: ["A) GLP-1", "B) Grelina", "C) PYY", "D) Adiponectina"],
+                correta: "B",
+                explicacaoCurta: "A Grelina é o único hormônio circulante conhecido que aumenta a fome de forma aguda.",
+                aprofundar: "Os níveis de grelina aumentam antes das refeições e diminuem após a alimentação. Em pessoas com obesidade, a queda pós-refeição da grelina pode ser menos pronunciada, o que contribui para uma menor sensação de saciedade e um retorno mais rápido da fome."
+            },
+            {
+                pergunta: "A resistência à insulina é uma característica central da obesidade e do diabetes tipo 2. Qual a principal função da insulina?",
+                alternativas: ["A) Aumentar a glicose no sangue", "B) Promover a quebra de gordura (lipólise)", "C) Facilitar a entrada de glicose nas células", "D) Estimular a fome no hipotálamo"],
+                correta: "C",
+                explicacaoCurta: "A insulina age como uma 'chave' que permite que a glicose do sangue entre nas células para ser usada como energia.",
+                aprofundar: "Na resistência à insulina, as células (especialmente musculares, hepáticas e adiposas) não respondem bem à insulina. O pâncreas compensa produzindo mais insulina (hiperinsulinemia). Com o tempo, essa superprodução pode falhar, levando à hiperglicemia e ao diabetes tipo 2. A insulina também tem um efeito anabólico, promovendo o armazenamento de gordura (lipogênese)."
+            },
+            {
+                pergunta: "O GLP-1 (Peptídeo semelhante ao glucagon 1) é um hormônio intestinal que se tornou alvo de medicamentos para obesidade. Qual seu principal efeito?",
+                alternativas: ["A) Aumentar a produção de grelina", "B) Acelerar o esvaziamento gástrico", "C) Aumentar a saciedade e a secreção de insulina", "D) Reduzir o gasto energético basal"],
+                correta: "C",
+                explicacaoCurta: "O GLP-1 melhora a secreção de insulina dependente de glicose, suprime o glucagon, retarda o esvaziamento gástrico e promove a saciedade no cérebro.",
+                aprofundar: "Liberado pelo intestino em resposta à comida, o GLP-1 faz parte do 'eixo intestino-cérebro'. Ele sinaliza ao pâncreas para liberar insulina e ao cérebro para reduzir o apetite. Medicamentos análogos do GLP-1 imitam e potencializam esses efeitos, sendo eficazes no tratamento da obesidade e do diabetes tipo 2."
+            },
+            {
+                pergunta: "No hipotálamo, dois circuitos neuronais antagônicos controlam a fome e a saciedade. Qual circuito é responsável por estimular a fome?",
+                alternativas: ["A) Circuito POMC/CART", "B) Circuito NPY/AgRP", "C) Eixo HPA (Hipotálamo-Pituitária-Adrenal)", "D) Sistema límbico"],
+                correta: "B",
+                explicacaoCurta: "Os neurônios NPY/AgRP (Neuropeptídeo Y / Peptídeo relacionado ao Agouti) são orexígenos, ou seja, estimulam fortemente a ingestão alimentar.",
+                aprofundar: "Este circuito, localizado no núcleo arqueado do hipotálamo, é ativado pela grelina (hormônio da fome) e inibido pela leptina e insulina (hormônios da saciedade). Quando ativado, ele não só aumenta a fome como também diminui o gasto energético, promovendo um balanço energético positivo."
+            },
+            {
+                pergunta: "Qual o papel do circuito POMC/CART no hipotálamo?",
+                alternativas: ["A) Promover o sono", "B) Aumentar a ingestão de água", "C) Suprimir o apetite e aumentar o gasto energético", "D) Estimular a busca por alimentos ricos em gordura"],
+                correta: "C",
+                explicacaoCurta: "Os neurônios POMC/CART são anorexígenos, ou seja, promovem a saciedade e reduzem a fome.",
+                aprofundar: "Ativados pela leptina e insulina, esses neurônios liberam o hormônio estimulante de alfa-melanócitos (α-MSH), que atua no receptor MC4R para suprimir a ingestão alimentar. Mutações no gene do receptor MC4R são uma das causas monogênicas mais comuns de obesidade severa."
+            },
+            {
+                pergunta: "A adiponectina é um hormônio produzido pelo tecido adiposo. Qual sua principal característica em indivíduos com obesidade?",
+                alternativas: ["A) Seus níveis estão elevados", "B) Seus níveis estão diminuídos", "C) Não sofre alteração", "D) É responsável pela resistência à leptina"],
+                correta: "B",
+                explicacaoCurta: "Paradoxalmente, embora seja produzida pela gordura, os níveis de adiponectina são mais baixos em pessoas com obesidade.",
+                aprofundar: "A adiponectina tem efeitos anti-inflamatórios e aumenta a sensibilidade à insulina. Níveis baixos de adiponectina na obesidade contribuem para a inflamação crônica de baixo grau e a resistência à insulina associadas à condição."
+            },
+            {
+                pergunta: "O Peptídeo YY (PYY) é outro hormônio intestinal liberado após as refeições. Qual seu efeito no apetite?",
+                alternativas: ["A) Aumenta a fome imediatamente", "B) Não tem efeito sobre o apetite", "C) Reduz o apetite por várias horas", "D) Estimula a preferência por doces"],
+                correta: "C",
+                explicacaoCurta: "O PYY é um sinal de saciedade de médio prazo, que ajuda a controlar a fome entre as refeições.",
+                aprofundar: "Liberado em proporção às calorias ingeridas, o PYY atua no hipotálamo para inibir os neurônios NPY/AgRP (da fome), promovendo uma sensação de plenitude que pode durar horas após a refeição. A resposta do PYY pode estar atenuada em alguns indivíduos com obesidade."
+            },
+            {
+                pergunta: "O cortisol, conhecido como 'hormônio do estresse', pode impactar o peso corporal. De que forma ele tipicamente atua?",
+                alternativas: ["A) Aumentando a massa muscular e reduzindo a gordura", "B) Suprimindo completamente o apetite", "C) Promovendo o acúmulo de gordura, especialmente na região abdominal", "D) Aumentando a sensibilidade à leptina"],
+                correta: "C",
+                explicacaoCurta: "O estresse crônico e o excesso de cortisol podem aumentar o apetite por alimentos palatáveis (ricos em gordura e açúcar) e promover o depósito de gordura visceral.",
+                aprofundar: "O cortisol pode interferir na sinalização de outros hormônios como a leptina e a insulina. Além disso, a gordura visceral (abdominal) é metabolicamente mais ativa e perigosa, estando fortemente associada a doenças cardiovasculares e diabetes tipo 2."
+            },
+            {
+                pergunta: "Qual o papel da Colecistoquinina (CCK) na regulação alimentar?",
+                alternativas: ["A) É um sinal de fome de longo prazo", "B) É um sinal de saciedade de curto prazo, agindo durante a refeição", "C) Regula o ciclo sono-vigília", "D) É produzida exclusivamente no cérebro"],
+                correta: "B",
+                explicacaoCurta: "A CCK é liberada pelo intestino delgado em resposta a gorduras e proteínas, ajudando a terminar uma refeição (saciedade intra-refeição).",
+                aprofundar: "A CCK retarda o esvaziamento gástrico e atua no nervo vago para enviar sinais de saciedade ao cérebro. Seu efeito é rápido, mas de curta duração, sendo crucial para o controle do tamanho das porções durante a alimentação."
+            },
+             {
+                pergunta: "A 'termogênese adaptativa' é um conceito importante na regulação do peso. O que ela descreve?",
+                alternativas: ["A) O aumento da temperatura corporal durante o exercício", "B) A redução do gasto energético que ocorre durante a perda de peso", "C) A produção de calor a partir da gordura marrom", "D) A preferência por alimentos quentes no inverno"],
+                correta: "B",
+                explicacaoCurta: "Quando uma pessoa perde peso, o corpo se adapta reduzindo o metabolismo mais do que o esperado apenas pela perda de massa, dificultando a manutenção do peso perdido.",
+                aprofundar: "Essa queda no gasto energético é um mecanismo de sobrevivência para proteger o corpo contra a fome. Hormônios como a leptina e os hormônios tireoidianos (T3) diminuem, enquanto a grelina aumenta, conspirando para recuperar o peso. Entender isso é fundamental para o manejo da obesidade a longo prazo."
+            },
+            {
+                pergunta: "Qual o papel principal do tecido adiposo marrom (TAM)?",
+                alternativas: ["A) Armazenar o excesso de energia como triglicerídeos", "B) Produzir hormônios inflamatórios como a resistina", "C) Queimar calorias para gerar calor (termogênese)", "D) Regular a pressão arterial"],
+                correta: "C",
+                explicacaoCurta: "Diferente da gordura branca (que armazena), a gordura marrom é especializada em dissipar energia na forma de calor.",
+                aprofundar: "O TAM é rico em mitocôndrias que contêm a proteína UCP1 (proteína desacopladora 1). Essa proteína permite que a energia seja liberada como calor em vez de ser usada para produzir ATP. A ativação do TAM é uma área de pesquisa promissora para o tratamento da obesidade, pois poderia aumentar o gasto energético total."
+            },
+            {
+                pergunta: "O que significa 'resistência à leptina' no contexto da obesidade?",
+                alternativas: ["A) O corpo produz pouca leptina", "B) O cérebro não responde adequadamente aos altos níveis de leptina", "C) A leptina se torna tóxica para as células", "D) A leptina estimula o apetite em vez de suprimi-lo"],
+                correta: "B",
+                explicacaoCurta: "Na obesidade, há muita leptina circulante, mas o cérebro age como se estivesse em estado de fome, pois não 'enxerga' o sinal da leptina.",
+                aprofundar: "A resistência à leptina é um dos pilares da fisiopatologia da obesidade. Pode ocorrer por problemas no transporte da leptina através da barreira hematoencefálica ou por defeitos na via de sinalização intracelular no hipotálamo. O resultado é que o cérebro não recebe o sinal de saciedade, perpetuando a ingestão alimentar e o armazenamento de energia."
+            },
+            {
+                pergunta: "Qual o papel dos hormônios tireoidianos (T3 e T4) no metabolismo?",
+                alternativas: ["A) Diminuir a taxa metabólica basal", "B) Regular os níveis de cálcio no sangue", "C) Controlar a velocidade do metabolismo e o gasto energético", "D) Aumentar o armazenamento de gordura"],
+                correta: "C",
+                explicacaoCurta: "Os hormônios tireoidianos, especialmente o T3 (forma ativa), atuam como um 'acelerador' do metabolismo em quase todas as células do corpo.",
+                aprofundar: "O hipotireoidismo (baixa função da tireoide) pode levar a um ganho de peso modesto, principalmente devido à retenção de líquidos e à redução do gasto energético basal. Embora seja importante verificar a função tireoidiana, o hipotireoidismo não é a causa primária da maioria dos casos de obesidade."
+            },
+            {
+                pergunta: "O 'eixo intestino-cérebro' refere-se à comunicação bidirecional entre o trato gastrointestinal e o sistema nervoso central. Qual das seguintes opções NÃO é um mediador dessa comunicação?",
+                alternativas: ["A) Hormônios como GLP-1 e PYY", "B) Nervo vago", "C) Metabólitos da microbiota intestinal", "D) Hormônio do crescimento (GH)"],
+                correta: "D",
+                explicacaoCurta: "O hormônio do crescimento (GH) é produzido na hipófise e atua no crescimento corporal, mas não é um sinalizador primário do eixo intestino-cérebro para regulação do apetite.",
+                aprofundar: "O eixo intestino-cérebro é uma rede complexa que integra sinais hormonais (GLP-1, PYY, CCK, Grelina), neurais (via nervo vago) e metabólicos (produzidos pela microbiota) para controlar a fome, a saciedade e o metabolismo energético. Essa comunicação é fundamental para a homeostase energética."
+            },
+            {
+                pergunta: "A amilina é um hormônio co-secretado com a insulina pelas células beta do pâncreas. Qual é a sua função na regulação do apetite?",
+                alternativas: ["A) Aumentar a fome", "B) Promover a saciedade e retardar o esvaziamento gástrico", "C) Estimular a produção de gordura", "D) Não ter efeito no apetite"],
+                correta: "B",
+                explicacaoCurta: "A amilina atua em conjunto com a insulina e outros hormônios intestinais para promover a sensação de saciedade após uma refeição.",
+                aprofundar: "A amilina age no cérebro para suprimir a ingestão de alimentos e também retarda a velocidade com que o estômago se esvazia, contribuindo para uma sensação prolongada de plenitude. Análogos da amilina, como a pramlintida, são usados no tratamento do diabetes e podem auxiliar na perda de peso."
+            },
+            {
+                pergunta: "A resistina é outra adipocina (hormônio do tecido adiposo). Qual é a sua associação com a obesidade e a resistência à insulina?",
+                alternativas: ["A) Seus níveis são baixos na obesidade e ela melhora a sensibilidade à insulina", "B) Seus níveis são altos na obesidade e ela está ligada à resistência à insulina", "C) Ela não tem relação com a insulina", "D) Ela é produzida apenas nos músculos"],
+                correta: "B",
+                explicacaoCurta: "Como o nome sugere, a resistina foi associada à resistência à insulina, e seus níveis tendem a ser mais elevados em estados de obesidade e inflamação.",
+                aprofundar: "Embora seu papel exato em humanos ainda seja debatido, estudos sugerem que a resistina contribui para o estado pró-inflamatório observado na obesidade e pode interferir na sinalização da insulina no fígado e em outros tecidos, exacerbando a resistência à insulina."
+            },
+            {
+                pergunta: "O que é lipogênese?",
+                alternativas: ["A) A quebra de gorduras para obter energia", "B) A síntese e armazenamento de novas moléculas de gordura (triglicerídeos)", "C) O transporte de gordura no sangue", "D) A digestão de gorduras no intestino"],
+                correta: "B",
+                explicacaoCurta: "Lipogênese é o processo metabólico pelo qual o corpo converte o excesso de carboidratos e proteínas em gordura para armazenamento no tecido adiposo.",
+                aprofundar: "Este processo é estimulado pela insulina. Após uma refeição rica em carboidratos, os níveis de insulina sobem, sinalizando ao fígado e ao tecido adiposo para converter a glicose em ácidos graxos e, em seguida, em triglicerídeos. Na obesidade, a lipogênese pode estar cronicamente ativada."
+            },
+            {
+                pergunta: "O que é lipólise?",
+                alternativas: ["A) A formação de novas células de gordura", "B) A conversão de glicose em gordura", "C) A quebra de gordura armazenada (triglicerídeos) para liberar ácidos graxos", "D) A absorção de gordura da dieta"],
+                correta: "C",
+                explicacaoCurta: "Lipólise é o processo de mobilização das reservas de energia do tecido adiposo, liberando ácidos graxos para serem usados como combustível por outros tecidos.",
+                aprofundar: "A lipólise é inibida pela insulina (após as refeições) e estimulada por hormônios como adrenalina, noradrenalina e glucagon (durante o jejum ou exercício). Na obesidade com resistência à insulina, a capacidade da insulina de suprimir a lipólise pode ser prejudicada, levando a um excesso de ácidos graxos livres na circulação, o que pode piorar a resistência à insulina em outros órgãos (lipotoxicidade)."
+            },
+            {
+                pergunta: "O Neuropeptídeo Y (NPY) é um dos mais potentes estimuladores do apetite conhecidos. Onde ele é produzido principalmente?",
+                alternativas: ["A) No pâncreas", "B) Nas células de gordura", "C) Nos neurônios do núcleo arqueado do hipotálamo", "D) No estômago"],
+                correta: "C",
+                explicacaoCurta: "O NPY é o principal neurotransmissor do circuito da fome (NPY/AgRP) no hipotálamo, impulsionando a busca por alimento.",
+                aprofundar: "A liberação de NPY é estimulada pela grelina e inibida pela leptina e pelo PYY. Além de aumentar a fome, o NPY também promove uma preferência por alimentos ricos em carboidratos e diminui o gasto energético, tornando-o um alvo central na regulação do peso corporal."
+            },
+            {
+                pergunta: "Qual é o principal papel do núcleo ventromedial do hipotálamo (NVM) na regulação do apetite?",
+                alternativas: ["A) Atuar como o 'centro da fome'", "B) Atuar como o 'centro da saciedade'", "C) Regular a temperatura corporal", "D) Controlar a sede"],
+                correta: "B",
+                explicacaoCurta: "Historicamente, o NVM é conhecido como o centro da saciedade. Lesões nesta área podem levar à hiperfagia (comer excessivo) e obesidade.",
+                aprofundar: "O NVM contém neurônios que respondem a sinais de saciedade como a leptina e a glicose. Ele recebe projeções dos neurônios POMC/CART (de saciedade) do núcleo arqueado e ajuda a integrar os sinais para suprimir a ingestão alimentar. Sua função é complexa e interligada com outras áreas cerebrais."
+            },
+            {
+                pergunta: "O que é o 'set point' de peso corporal?",
+                alternativas: ["A) O peso ideal de acordo com as tabelas de IMC", "B) Um peso que o corpo tenta defender ativamente através de mecanismos fisiológicos", "C) O peso máximo que uma pessoa já atingiu", "D) O peso que uma pessoa deseja alcançar"],
+                correta: "B",
+                explicacaoCurta: "A teoria do 'set point' sugere que o corpo possui um intervalo de peso preferido que ele defende contra desvios, ajustando o apetite e o metabolismo.",
+                aprofundar: "Quando o peso cai abaixo do 'set point', o corpo responde aumentando a fome e diminuindo o gasto energético. Quando o peso sobe, ele deveria fazer o oposto. Na obesidade, acredita-se que esse 'set point' se eleva para um patamar mais alto e passa a ser defendido nesse novo nível, tornando a perda de peso sustentada um desafio fisiológico."
+            },
+            {
+                pergunta: "A microbiota intestinal pode influenciar o balanço energético. De que forma?",
+                alternativas: ["A) Apenas através da produção de vitaminas", "B) Extraindo mais calorias dos alimentos e produzindo metabólitos que afetam os hormônios", "C) Comunicando-se diretamente com o tecido adiposo marrom", "D) Diminuindo a absorção de todos os nutrientes"],
+                correta: "B",
+                explicacaoCurta: "A composição da microbiota pode afetar a eficiência com que extraímos energia da dieta e produzir compostos como os ácidos graxos de cadeia curta (AGCC) que sinalizam para o corpo.",
+                aprofundar: "Certas configurações da microbiota são mais eficientes em fermentar fibras não digeríveis, resultando em uma maior 'colheita' de energia. Os AGCC produzidos, como butirato e propionato, podem influenciar a liberação de hormônios intestinais (GLP-1, PYY) e ter efeitos anti-inflamatórios, modulando o metabolismo de forma complexa."
+            },
+            {
+                pergunta: "O hormônio Orexina (ou hipocretina) é mais conhecido por seu papel na regulação do sono. Como ele se relaciona com a alimentação?",
+                alternativas: ["A) Ele suprime fortemente o apetite", "B) Ele promove o estado de vigília e pode aumentar a ingestão alimentar", "C) Ele é liberado apenas durante o sono profundo", "D) Ele não tem nenhuma relação com a alimentação"],
+                correta: "B",
+                explicacaoCurta: "A orexina promove a vigília e o estado de alerta, o que está intrinsecamente ligado à busca por alimento. A falta de sono pode afetar seus níveis e o apetite.",
+                aprofundar: "A privação de sono tem sido associada a alterações nos hormônios do apetite, incluindo aumento da grelina e diminuição da leptina. A orexina pode mediar parte desses efeitos, aumentando a motivação para comer, especialmente por alimentos palatáveis, como uma forma de o cérebro buscar energia para se manter acordado."
+            },
+            {
+                pergunta: "FGF21 (Fator de Crescimento de Fibroblastos 21) é um hormônio com múltiplos efeitos metabólicos. Qual é um de seus papéis emergentes?",
+                alternativas: ["A) Aumentar a resistência à insulina", "B) Promover o armazenamento de gordura no fígado", "C) Melhorar a sensibilidade à insulina e suprimir a preferência por doces", "D) Aumentar a pressão arterial"],
+                correta: "C",
+                explicacaoCurta: "O FGF21 é considerado um hormônio benéfico, melhorando o metabolismo da glicose e dos lipídios. Curiosamente, também parece regular a ingestão de macronutrientes específicos.",
+                aprofundar: "Produzido principalmente pelo fígado, o FGF21 tem efeitos pleiotrópicos, incluindo o aumento da captação de glicose, a oxidação de gorduras e o aumento do gasto energético. Estudos sugerem que ele pode atuar no cérebro para suprimir o desejo por açúcar e álcool, tornando-o um alvo terapêutico muito interessante."
+            },
+            {
+                pergunta: "Qual o efeito principal do Peptídeo Relacionado ao Agouti (AgRP) liberado pelos neurônios NPY/AgRP?",
+                alternativas: ["A) Inibir o apetite por um longo período", "B) Bloquear o receptor MC4R, aumentando a fome", "C) Aumentar a sensibilidade à insulina", "D) Promover a queima de gordura marrom"],
+                correta: "B",
+                explicacaoCurta: "O AgRP é um antagonista do receptor de melanocortina 4 (MC4R), bloqueando o sinal de saciedade do α-MSH e estimulando potentemente a fome.",
+                aprofundar: "Enquanto o NPY estimula a fome, o AgRP age de forma mais duradoura, garantindo que o impulso para comer seja mantido. A co-liberação de NPY e AgRP cria um poderoso sinal orexígeno (estimulante da fome) no cérebro."
+            },
+            {
+                pergunta: "O que é 'gasto energético de repouso' (GER)?",
+                alternativas: ["A) A energia gasta durante o exercício intenso", "B) A energia necessária para manter as funções vitais do corpo em repouso", "C) A energia usada para digerir alimentos", "D) A energia gasta em atividades diárias leves"],
+                correta: "B",
+                explicacaoCurta: "O GER, ou taxa metabólica basal, representa a maior parte do gasto energético diário total para a maioria das pessoas.",
+                aprofundar: "O GER é influenciado pela massa corporal (especialmente massa magra), idade, sexo e genética. Durante a perda de peso, o GER diminui não apenas pela redução da massa, mas também pela termogênese adaptativa, um fator chave na dificuldade de manutenção do peso."
+            },
+            {
+                pergunta: "Qual é o efeito da insulina no cérebro em relação ao apetite?",
+                alternativas: ["A) Aumentar a fome", "B) Atuar como um sinal de saciedade, semelhante à leptina", "C) Não ter nenhum efeito no cérebro", "D) Estimular a preferência por gorduras"],
+                correta: "B",
+                explicacaoCurta: "Assim como a leptina, a insulina atravessa a barreira hematoencefálica e sinaliza no hipotálamo para reduzir a ingestão alimentar.",
+                aprofundar: "A insulina informa ao cérebro não apenas sobre os níveis de glicose, mas também sobre o estado geral de energia do corpo. A resistência à insulina no cérebro, um fenômeno que pode ocorrer na obesidade, prejudica esse sinal de saciedade e contribui para a desregulação do apetite."
+            },
+            {
+                pergunta: "O 'efeito térmico do alimento' (ETA) contribui para o gasto energético total. O que ele representa?",
+                alternativas: ["A) O aquecimento do corpo ao comer alimentos quentes", "B) A energia gasta para digerir, absorver e metabolizar os nutrientes", "C) A queima de calorias durante o cozimento", "D) A preferência por alimentos que geram calor"],
+                correta: "B",
+                explicacaoCurta: "O corpo gasta energia para processar os alimentos que ingere, e isso representa cerca de 10% do gasto energético diário.",
+                aprofundar: "O ETA varia de acordo com a composição da refeição. As proteínas têm o maior efeito térmico (20-30% de suas calorias são gastas no processamento), seguidas pelos carboidratos (5-10%) e gorduras (0-3%). Dietas ricas em proteínas podem, portanto, aumentar ligeiramente o gasto metabólico."
+            },
+            {
+                pergunta: "Por que a perda de peso rápida e agressiva muitas vezes leva a uma rápida recuperação do peso (efeito sanfona)?",
+                alternativas: ["A) Porque a força de vontade diminui com o tempo", "B) Porque o corpo desencadeia fortes respostas hormonais e metabólicas para defender seu peso", "C) Porque a pessoa volta a comer exatamente como antes", "D) Porque a gordura tem 'memória'"],
+                correta: "B",
+                explicacaoCurta: "A perda de peso ativa uma 'tempestade perfeita' fisiológica: a grelina (fome) sobe, a leptina e o PYY (saciedade) caem, e o metabolismo desacelera.",
+                aprofundar: "Essa resposta neuro-hormonal é uma adaptação evolutiva para sobreviver à fome. O cérebro interpreta a dieta como uma ameaça e luta para restaurar o peso perdido. O manejo bem-sucedido da obesidade requer estratégias para mitigar essa resposta fisiológica a longo prazo, não apenas focar na restrição calórica inicial."
+            },
+            {
+                pergunta: "Qual a função do receptor MC4R (receptor de melanocortina 4)?",
+                alternativas: ["A) Detectar os níveis de grelina", "B) Mediar os sinais de fome do NPY", "C) Mediar os sinais de saciedade do α-MSH", "D) Regular a absorção de gordura"],
+                correta: "C",
+                explicacaoCurta: "O MC4R é o receptor onde o α-MSH (produzido pelos neurônios POMC/CART) se liga para sinalizar saciedade e reduzir a ingestão alimentar.",
+                aprofundar: "Mutações que inativam o gene MC4R são a causa mais comum de obesidade monogênica. Indivíduos com essas mutações sentem fome excessiva (hiperfagia) e têm uma tendência a desenvolver obesidade severa desde a infância, destacando a importância crítica desta via na regulação do peso."
+            },
+            {
+                pergunta: "Como a cirurgia bariátrica, especialmente o bypass gástrico, afeta os hormônios do apetite?",
+                alternativas: ["A) Apenas reduzindo o tamanho do estômago", "B) Aumentando drasticamente a grelina e diminuindo o GLP-1", "C) Diminuindo a grelina e aumentando significativamente hormônios de saciedade como GLP-1 e PYY", "D) Não alterando os hormônios"],
+                correta: "C",
+                explicacaoCurta: "Além da restrição e má absorção, o principal sucesso da cirurgia bariátrica vem de suas profundas alterações hormonais favoráveis.",
+                aprofundar: "O desvio do trânsito alimentar no bypass gástrico faz com que os nutrientes cheguem mais rapidamente ao intestino distal, estimulando uma liberação exagerada de GLP-1 e PYY, o que causa uma forte saciedade. Além disso, a exclusão do fundo gástrico reduz a produção de grelina. Essa combinação hormonal reprograma a regulação do apetite."
+            },
+            {
+                pergunta: "O que é 'fome hedônica'?",
+                alternativas: ["A) A fome fisiológica causada pela necessidade de energia", "B) O desejo de comer por prazer, na ausência de necessidade calórica", "C) A fome que ocorre apenas à noite", "D) A fome específica por vegetais"],
+                correta: "B",
+                explicacaoCurta: "A fome hedônica é impulsionada pelos sistemas de recompensa do cérebro (dopaminérgicos), e não pelos sinais de homeostase energética.",
+                aprofundar: "Alimentos altamente palatáveis (ricos em açúcar, gordura e sal) podem ativar os circuitos de recompensa cerebral de forma semelhante a drogas de abuso. Na obesidade, pode haver uma desregulação desses circuitos, levando a um consumo excessivo motivado pelo prazer, mesmo quando o corpo já está saciado do ponto de vista energético."
+            },
+            {
+                pergunta: "Qual o impacto da inflamação crônica de baixo grau, comum na obesidade, no metabolismo?",
+                alternativas: ["A) Melhora a sensibilidade à insulina", "B) Contribui para a resistência à insulina e à leptina", "C) Aumenta a quantidade de tecido adiposo marrom", "D) Não tem impacto no metabolismo"],
+                correta: "B",
+                explicacaoCurta: "O tecido adiposo expandido na obesidade libera citocinas pró-inflamatórias que interferem na sinalização hormonal.",
+                aprofundar: "Essa inflamação sistêmica, chamada de 'meta-inflamação', é um elo crucial entre a obesidade e suas comorbidades. As citocinas inflamatórias, como TNF-α e IL-6, podem prejudicar as vias de sinalização da insulina e da leptina nos tecidos, criando um ciclo vicioso que perpetua a resistência hormonal e o ganho de peso."
+            },
+            {
+                pergunta: "Qual o papel do núcleo arqueado (ARC) do hipotálamo?",
+                alternativas: ["A) É o principal centro da visão", "B) É o principal integrador dos sinais hormonais de fome e saciedade", "C) Controla a memória de longo prazo", "D) Regula a temperatura da pele"],
+                correta: "B",
+                explicacaoCurta: "O ARC é a 'porta de entrada' para os sinais hormonais do corpo (leptina, grelina, insulina, etc.) no cérebro.",
+                aprofundar: "Localizado em uma área com barreira hematoencefálica mais permeável, o ARC pode 'sentir' os níveis de hormônios circulantes. Ele abriga os dois principais grupos de neurônios que controlam o apetite: os orexígenos (NPY/AgRP) e os anorexígenos (POMC/CART), tornando-se o centro de comando primário da homeostase energética."
+            },
+            {
+                pergunta: "A amilina é um hormônio co-secretado com a insulina. Qual é um de seus principais efeitos?",
+                alternativas: ["A) Acelerar o esvaziamento gástrico", "B) Aumentar a produção de glucagon", "C) Retardar o esvaziamento gástrico e promover a saciedade", "D) Estimular a fome"],
+                correta: "C",
+                explicacaoCurta: "A amilina atua como um parceiro da insulina, ajudando a controlar os níveis de glicose pós-refeição e promovendo a saciedade.",
+                aprofundar: "Ao retardar o esvaziamento gástrico, a amilina ajuda a prevenir picos de glicose muito rápidos após a alimentação. Ela também age no cérebro para aumentar a sensação de plenitude. Análogos da amilina são usados como terapia adjuvante no diabetes."
+            },
+            {
+                pergunta: "O que é 'lipotoxicidade'?",
+                alternativas: ["A) A alergia a alimentos gordurosos", "B) Os efeitos tóxicos do acúmulo de lipídios em tecidos não adiposos", "C) A produção de toxinas pela gordura corporal", "D) A queima excessiva de gordura"],
+                correta: "B",
+                explicacaoCurta: "Quando o tecido adiposo não consegue mais armazenar gordura de forma segura, os lipídios 'transbordam' para outros órgãos, como fígado, pâncreas e músculos.",
+                aprofundar: "Esse acúmulo ectópico de gordura em tecidos que não são feitos para armazená-la é altamente prejudicial. No fígado, causa esteatose (fígado gorduroso); no pâncreas, pode prejudicar as células beta produtoras de insulina; e nos músculos, causa resistência à insulina. A lipotoxicidade é um mecanismo chave que liga a obesidade ao diabetes tipo 2 e outras doenças metabólicas."
+            },
+            {
+                pergunta: "Qual o principal efeito da dopamina na alimentação?",
+                alternativas: ["A) Sinalizar saciedade", "B) Regular a digestão", "C) Mediar a motivação e a recompensa associadas à comida", "D) Controlar os níveis de glicose"],
+                correta: "C",
+                explicacaoCurta: "A dopamina está no centro do sistema de recompensa do cérebro e é crucial para a motivação de buscar e consumir alimentos palatáveis.",
+                aprofundar: "A ingestão de alimentos saborosos libera dopamina, criando uma sensação de prazer e reforçando o comportamento. Em alguns indivíduos com obesidade, pode haver uma menor sensibilidade dos receptores de dopamina, o que os levaria a comer mais para atingir o mesmo nível de recompensa, um conceito conhecido como 'hipótese da deficiência de recompensa'."
+            },
+            {
+                pergunta: "Por que o sono de má qualidade ou insuficiente está associado ao ganho de peso?",
+                alternativas: ["A) Porque as pessoas comem mais durante a noite", "B) Porque causa desregulação hormonal, aumentando a grelina e diminuindo a leptina", "C) Porque o metabolismo desacelera apenas durante o sono", "D) Porque aumenta a absorção de calorias"],
+                correta: "B",
+                explicacaoCurta: "A privação de sono altera o equilíbrio dos principais hormônios do apetite, aumentando a fome e diminuindo a saciedade.",
+                aprofundar: "Além de aumentar a grelina e diminuir a leptina, a falta de sono também pode aumentar os níveis de cortisol e a fome hedônica, levando a uma maior ingestão de alimentos calóricos e palatáveis. Manter uma boa higiene do sono é uma parte importante, muitas vezes subestimada, do manejo do peso."
+            },
+            {
+                pergunta: "Qual é a diferença fundamental entre 'fome' e 'apetite'?",
+                alternativas: ["A) Não há diferença, são sinônimos", "B) Fome é a necessidade fisiológica de comer, enquanto apetite é o desejo de comer", "C) Fome é o desejo de comer, apetite é a necessidade fisiológica", "D) Fome é para comida salgada, apetite para comida doce"],
+                correta: "B",
+                explicacaoCurta: "A fome é a resposta do corpo à falta de energia (homeostática), enquanto o apetite pode ser influenciado por fatores psicológicos, sociais e ambientais (hedônicos).",
+                aprofundar: "É possível ter apetite sem sentir fome (ex: comer uma sobremesa após uma refeição completa) ou sentir fome, mas não ter apetite (ex: durante uma doença). A regulação do peso envolve o complexo interplay entre os sistemas que governam a fome e os que governam o apetite/recompensa."
+            }
+        ];
+        
+        // --- LÓGICA DO JOGO ---
+
+        // Classes/Objetos
+        class Player {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = config.tileSize * 0.8;
+                this.height = config.tileSize * 0.9;
+                this.speed = config.playerSpeed;
+                this.dx = 0;
+                this.dy = 0;
+                this.direction = 'right';
+                this.animationStep = 0;
+            }
+
+            draw() {
+                ctx.fillStyle = '#feca57'; // Cor do jogador
+                const bodyX = this.x + (config.tileSize - this.width) / 2;
+                const bodyY = this.y + (config.tileSize - this.height) / 2;
+
+                // Animação simples de caminhada
+                const stepOffset = this.animationStep > 0.5 ? 2 : -2;
+
+                // Cabeça (com barba)
+                ctx.beginPath();
+                ctx.arc(bodyX + this.width / 2, bodyY + this.height * 0.2, this.width * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#594545'; // Cor da barba
+                ctx.fillRect(bodyX + this.width * 0.2, bodyY + this.height * 0.3, this.width * 0.6, this.height * 0.1);
+
+
+                // Tronco
+                ctx.fillStyle = '#1e90ff'; // Camisa azul
+                ctx.fillRect(bodyX, bodyY + this.height * 0.4, this.width, this.height * 0.4);
+
+                // Pernas
+                ctx.fillStyle = '#2f3640'; // Calça escura
+                ctx.fillRect(bodyX, bodyY + this.height * 0.8, this.width * 0.4, this.height * 0.2 + (this.dy !== 0 ? stepOffset : 0));
+                ctx.fillRect(bodyX + this.width * 0.6, bodyY + this.height * 0.8, this.width * 0.4, this.height * 0.2 + (this.dy !== 0 ? -stepOffset : 0));
+                
+                // Braços
+                ctx.fillStyle = '#feca57';
+                ctx.fillRect(bodyX - this.width * 0.1, bodyY + this.height * 0.4, this.width * 0.2, this.height * 0.3 + (this.dx !== 0 ? stepOffset : 0));
+                ctx.fillRect(bodyX + this.width * 0.9, bodyY + this.height * 0.4, this.width * 0.2, this.height * 0.3 + (this.dx !== 0 ? -stepOffset : 0));
+            }
+
+            update() {
+                // Animação
+                this.animationStep = (this.animationStep + 0.1) % 1;
+
+                const nextX = this.x + this.dx;
+                const nextY = this.y + this.dy;
+
+                if (!isWallCollision(nextX, nextY, this.width, this.height)) {
+                    this.x = nextX;
+                    this.y = nextY;
+                }
+            }
+
+            setDirection(dx, dy) {
+                this.dx = dx * this.speed;
+                this.dy = dy * this.speed;
+                if (dx > 0) this.direction = 'right';
+                if (dx < 0) this.direction = 'left';
+                if (dy > 0) this.direction = 'down';
+                if (dy < 0) this.direction = 'up';
+            }
+        }
+
+        class Enemy {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = config.tileSize * 0.9;
+                this.height = config.tileSize * 0.9;
+                this.speed = config.enemySpeed;
+                this.dx = 0;
+                this.dy = [1, -1][Math.floor(Math.random() * 2)] * this.speed; // Começa movendo na vertical
+            }
+
+            draw() {
+                ctx.fillStyle = '#ff6b6b'; // Cor do inimigo
+                const bodyX = this.x + (config.tileSize - this.width) / 2;
+                const bodyY = this.y + (config.tileSize - this.height) / 2;
+                
+                // Corpo obeso estilizado
+                ctx.beginPath();
+                ctx.ellipse(bodyX + this.width / 2, bodyY + this.height / 2, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Olhos
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(bodyX + this.width * 0.3, bodyY + this.height * 0.4, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(bodyX + this.width * 0.7, bodyY + this.height * 0.4, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            update() {
+                // IA Simples: Persegue o jogador se estiver na mesma linha/coluna sem paredes
+                const canSeePlayer = () => {
+                    if (!state.player) return null;
+                    const playerTileX = Math.floor((state.player.x + config.tileSize / 2) / config.tileSize);
+                    const playerTileY = Math.floor((state.player.y + config.tileSize / 2) / config.tileSize);
+                    const enemyTileX = Math.floor((this.x + config.tileSize / 2) / config.tileSize);
+                    const enemyTileY = Math.floor((this.y + config.tileSize / 2) / config.tileSize);
+
+                    if (playerTileX === enemyTileX) {
+                        const start = Math.min(playerTileY, enemyTileY);
+                        const end = Math.max(playerTileY, enemyTileY);
+                        for (let i = start; i <= end; i++) {
+                            if (state.map[i][playerTileX] === 1) return false;
+                        }
+                        return { chaseX: 0, chaseY: playerTileY > enemyTileY ? 1 : -1 };
+                    }
+                    if (playerTileY === enemyTileY) {
+                        const start = Math.min(playerTileX, enemyTileX);
+                        const end = Math.max(playerTileX, enemyTileX);
+                        for (let i = start; i <= end; i++) {
+                            if (state.map[playerTileY][i] === 1) return false;
+                        }
+                        return { chaseX: playerTileX > enemyTileX ? 1 : -1, chaseY: 0 };
+                    }
+                    return null;
+                };
+                
+                const chaseDirection = canSeePlayer();
+                if (chaseDirection) {
+                    this.dx = chaseDirection.chaseX * this.speed;
+                    this.dy = chaseDirection.chaseY * this.speed;
+                }
+
+                let nextX = this.x + this.dx;
+                let nextY = this.y + this.dy;
+
+                if (isWallCollision(nextX, nextY, this.width, this.height)) {
+                    // Se colidiu, tenta uma nova direção aleatória (patrulha)
+                    const directions = [
+                        { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+                        { dx: 0, dy: 1 }, { dx: 0, dy: -1 }
+                    ].sort(() => Math.random() - 0.5);
+
+                    for (const dir of directions) {
+                        nextX = this.x + dir.dx * this.speed;
+                        nextY = this.y + dir.dy * this.speed;
+                        if (!isWallCollision(nextX, nextY, this.width, this.height)) {
+                            this.dx = dir.dx * this.speed;
+                            this.dy = dir.dy * this.speed;
+                            break;
+                        }
+                    }
+                }
+                
+                this.x += this.dx;
+                this.y += this.dy;
+            }
+        }
+
+        class Collectible {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type; // 'whey' ou 'creatine'
+                this.points = type === 'whey' ? 10 : 15;
+                this.size = config.tileSize * 0.6;
+                this.width = this.size; // *** CORREÇÃO: Adicionada propriedade width ***
+                this.height = this.size; // *** CORREÇÃO: Adicionada propriedade height ***
+            }
+
+            draw() {
+                const itemX = this.x + (config.tileSize - this.size) / 2;
+                const itemY = this.y + (config.tileSize - this.size) / 2;
+                
+                // *** CORREÇÃO: A colisão agora usa this.x e this.y, então o desenho deve ser relativo a eles.
+                // A lógica de colisão usa x,y do objeto, então o desenho deve ser relativo a ele.
+                // O centro do objeto é this.x, this.y.
+                
+                ctx.fillStyle = this.type === 'whey' ? '#bdc3c7' : '#95a5a6';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = `bold ${this.size * 0.8}px ${getComputedStyle(document.body).fontFamily}`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const letter = this.type === 'whey' ? 'W' : 'C';
+                ctx.fillText(letter, this.x + this.width / 2, this.y + this.height / 2 + 2);
+            }
+        }
+        
+        // Funções de Áudio (Web Audio API)
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+
+            switch(type) {
+                case 'collect':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                    break;
+                case 'correct':
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    setTimeout(() => {
+                        const osc2 = audioCtx.createOscillator();
+                        const gain2 = audioCtx.createGain();
+                        osc2.connect(gain2);
+                        gain2.connect(audioCtx.destination);
+                        gain2.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                        osc2.type = 'triangle';
+                        osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+                        gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                        osc2.start();
+                        osc2.stop(audioCtx.currentTime + 0.3);
+                    }, 100);
+                    break;
+                case 'wrong':
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.3);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    break;
+                case 'win':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+                    break;
+                case 'lose':
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 1.5);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+                    break;
+            }
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // Geração de Mapa e Níveis
+        function generateMap(width, height) {
+            let map = Array.from({ length: height }, () => Array(width).fill(1)); // Começa tudo parede
+            
+            function carve(x, y) {
+                const directions = [
+                    { x: 0, y: -2 }, { x: 2, y: 0 },
+                    { x: 0, y: 2 }, { x: -2, y: 0 }
+                ].sort(() => Math.random() - 0.5);
+
+                map[y][x] = 0;
+
+                for (const dir of directions) {
+                    const newX = x + dir.x;
+                    const newY = y + dir.y;
+                    if (newY > 0 && newY < height - 1 && newX > 0 && newX < width - 1 && map[newY][newX] === 1) {
+                        map[y + dir.y / 2][x + dir.x / 2] = 0;
+                        carve(newX, newY);
+                    }
+                }
+            }
+
+            carve(1, 1);
+            
+            // Garante que a borda é parede
+            for(let i=0; i < width; i++) {
+                map[0][i] = 1;
+                map[height-1][i] = 1;
+            }
+            for(let i=0; i < height; i++) {
+                map[i][0] = 1;
+                map[i][width-1] = 1;
+            }
+
+            return map;
+        }
+
+        function setupLevel(level) {
+            const mapWidth = 21 + (level - 1) * 2; // Aumenta o mapa com o nível
+            const mapHeight = 21 + (level - 1) * 2;
+            state.map = generateMap(mapWidth, mapHeight);
+            
+            config.tileSize = Math.floor(canvas.width / mapWidth);
+            
+            state.collectibles = [];
+            state.enemies = [];
+            
+            // Encontra posições vazias
+            const emptyTiles = [];
+            for (let y = 0; y < mapHeight; y++) {
+                for (let x = 0; x < mapWidth; x++) {
+                    if (state.map[y][x] === 0) {
+                        emptyTiles.push({ x, y });
+                    }
+                }
+            }
+            
+            // Posiciona jogador
+            const playerPos = emptyTiles.shift();
+            state.player = new Player(playerPos.x * config.tileSize, playerPos.y * config.tileSize);
+
+            // Posiciona inimigos
+            const numEnemies = 5 + level; // *** ALTERAÇÃO: Aumentado o número de inimigos ***
+            for (let i = 0; i < numEnemies && emptyTiles.length > 10; i++) {
+                const enemyIndex = Math.floor(Math.random() * (emptyTiles.length / 2)) + Math.floor(emptyTiles.length / 2); // Pega da metade final
+                const enemyPos = emptyTiles.splice(enemyIndex, 1)[0];
+                state.enemies.push(new Enemy(enemyPos.x * config.tileSize, enemyPos.y * config.tileSize));
+            }
+            
+            // Posiciona colecionáveis
+            const numCollectibles = Math.floor(emptyTiles.length * 0.5); // 50% dos espaços vazios
+            for (let i = 0; i < numCollectibles && emptyTiles.length > 0; i++) {
+                const collectibleIndex = Math.floor(Math.random() * emptyTiles.length);
+                const pos = emptyTiles.splice(collectibleIndex, 1)[0];
+                const type = Math.random() > 0.4 ? 'whey' : 'creatine';
+                // *** CORREÇÃO: Centraliza o colecionável no tile ***
+                const collectibleSize = config.tileSize * 0.6;
+                const cX = pos.x * config.tileSize + (config.tileSize - collectibleSize) / 2;
+                const cY = pos.y * config.tileSize + (config.tileSize - collectibleSize) / 2;
+                state.collectibles.push(new Collectible(cX, cY, type));
+            }
+            
+            updateHUD();
+        }
+
+        // Funções de Renderização
+        function drawMap() {
+            for (let y = 0; y < state.map.length; y++) {
+                for (let x = 0; x < state.map[y].length; x++) {
+                    if (state.map[y][x] === 1) {
+                        ctx.fillStyle = '#0a3d62'; // Cor da parede
+                        ctx.fillRect(x * config.tileSize, y * config.tileSize, config.tileSize, config.tileSize);
+                    }
+                }
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMap();
+            state.collectibles.forEach(c => c.draw());
+            state.enemies.forEach(e => e.draw());
+            if(state.player) state.player.draw();
+        }
+
+        // Funções de Lógica e Colisão
+        function isWallCollision(x, y, width, height) {
+            const tilesToCheck = [
+                { x: x, y: y }, // Top-left
+                { x: x + width, y: y }, // Top-right
+                { x: x, y: y + height }, // Bottom-left
+                { x: x + width, y: y + height } // Bottom-right
+            ];
+
+            for (const point of tilesToCheck) {
+                const tileX = Math.floor(point.x / config.tileSize);
+                const tileY = Math.floor(point.y / config.tileSize);
+                if (state.map[tileY] && state.map[tileY][tileX] === 1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function checkCollisions() {
+            if (!state.player) return;
+            // Colecionáveis
+            for (let i = state.collectibles.length - 1; i >= 0; i--) {
+                const collectible = state.collectibles[i];
+                if (rectCollision(state.player, collectible)) {
+                    state.score += collectible.points;
+                    state.collectibles.splice(i, 1);
+                    playSound('collect');
+                    updateHUD();
+                }
+            }
+
+            // Inimigos
+            for (const enemy of state.enemies) {
+                if (rectCollision(state.player, enemy)) {
+                    state.gameStatus = 'quiz';
+                    showQuiz();
+                    break;
+                }
+            }
+        }
+        
+        function rectCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        // Funções de UI
+        function updateHUD() {
+            hud.vidas.textContent = state.lives;
+            hud.pontos.textContent = state.score;
+            hud.itensRestantes.textContent = state.collectibles.length;
+            hud.faseAtual.textContent = state.level;
+        }
+        
+        function showToast(message, type = 'success') {
+            toast.textContent = message;
+            toast.className = `show ${type}`;
+            setTimeout(() => {
+                toast.className = '';
+            }, 2000);
+        }
+
+        function showModal(modal) {
+            Object.values(modals).forEach(m => m.style.display = 'none');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+        // Lógica do Quiz
+        function showQuiz() {
+            // Seleciona uma pergunta aleatória que não foi a última
+            let newQuestion;
+            do {
+                newQuestion = questionPool[Math.floor(Math.random() * questionPool.length)];
+            } while (newQuestion === state.currentQuestion);
+            state.currentQuestion = newQuestion;
+
+            // Reset UI do Quiz
+            quizUI.pergunta.textContent = state.currentQuestion.pergunta;
+            quizUI.alternativas.innerHTML = '';
+            quizUI.explicacaoCurta.textContent = '';
+            quizUI.btnAprofundar.style.display = 'none';
+            quizUI.painelAprofundar.classList.remove('visivel');
+            quizUI.painelAprofundar.style.maxHeight = '0';
+            quizUI.painelAprofundar.style.padding = '0 15px';
+            quizUI.btnContinuar.style.display = 'none';
+
+            // Embaralha alternativas
+            const shuffledAlternatives = [...state.currentQuestion.alternativas].sort(() => Math.random() - 0.5);
+
+            shuffledAlternatives.forEach(alt => {
+                const button = document.createElement('button');
+                button.className = 'alternativa-btn';
+                button.innerHTML = alt;
+                button.onclick = () => handleAnswer(alt[0]);
+                quizUI.alternativas.appendChild(button);
+            });
+
+            showModal(modals.quiz);
+        }
+
+        function handleAnswer(answer) {
+            const { correta, explicacaoCurta, aprofundar } = state.currentQuestion;
+            const isCorrect = answer === correta;
+            
+            // Desabilita botões e mostra feedback visual
+            Array.from(quizUI.alternativas.children).forEach(btn => {
+                btn.classList.add('disabled');
+                const btnAnswer = btn.textContent[0];
+                if (btnAnswer === correta) {
+                    btn.classList.add('correta');
+                } else if (btnAnswer === answer && !isCorrect) {
+                    btn.classList.add('errada');
+                }
+            });
+
+            if (isCorrect) {
+                playSound('correct');
+                showToast('Certo! Você escapou!', 'success');
+                quizUI.explicacaoCurta.textContent = explicacaoCurta;
+                
+                // Lógica de escape: teleporte para um local seguro
+                teleportPlayerToSafety();
+
+            } else {
+                playSound('wrong');
+                showToast('Ops! Resposta errada.', 'error');
+                state.lives--;
+                updateHUD();
+                quizUI.explicacaoCurta.innerHTML = `Errado. A resposta correta é <strong>${correta}</strong>. ${explicacaoCurta}`;
+                
+                // Volta ao início
+                const startTile = findFirstEmptyTile();
+                state.player.x = startTile.x * config.tileSize;
+                state.player.y = startTile.y * config.tileSize;
+
+                if (state.lives <= 0) {
+                    setTimeout(() => {
+                        state.gameStatus = 'gameOver';
+                        showGameOver(false);
+                    }, 1500);
+                }
+            }
+            
+            // Mostra botão de aprofundar
+            quizUI.textoAprofundado.textContent = aprofundar;
+            quizUI.btnAprofundar.style.display = 'block';
+            quizUI.btnContinuar.style.display = 'block';
+        }
+        
+        function findFirstEmptyTile() {
+            for (let y = 0; y < state.map.length; y++) {
+                for (let x = 0; x < state.map[y].length; x++) {
+                    if (state.map[y][x] === 0) {
+                        return { x, y };
+                    }
+                }
+            }
+            return { x: 1, y: 1 }; // Fallback
+        }
+        
+        function teleportPlayerToSafety() {
+            const emptyTiles = [];
+            for (let y = 0; y < state.map.length; y++) {
+                for (let x = 0; x < state.map[y].length; x++) {
+                    if (state.map[y][x] === 0) {
+                        // Verifica se não há inimigos perto
+                        let isSafe = true;
+                        for(const enemy of state.enemies) {
+                            const dist = Math.sqrt(Math.pow(x - enemy.x/config.tileSize, 2) + Math.pow(y - enemy.y/config.tileSize, 2));
+                            if (dist < 5) { // Distância de segurança de 5 tiles
+                                isSafe = false;
+                                break;
+                            }
+                        }
+                        if(isSafe) emptyTiles.push({ x, y });
+                    }
+                }
+            }
+            if(emptyTiles.length > 0) {
+                const safeSpot = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+                state.player.x = safeSpot.x * config.tileSize;
+                state.player.y = safeSpot.y * config.tileSize;
+            } else { // Fallback se não achar lugar seguro
+                const startTile = findFirstEmptyTile();
+                state.player.x = startTile.x * config.tileSize;
+                state.player.y = startTile.y * config.tileSize;
+            }
+        }
+
+        function continueGame() {
+            if (state.gameStatus !== 'gameOver') {
+                state.gameStatus = 'playing';
+                showModal(null);
+                gameLoop();
+            }
+        }
+        
+        function showGameOver(isWin) {
+            playSound(isWin ? 'win' : 'lose');
+            state.gameStatus = 'gameOver';
+            cancelAnimationFrame(state.animationFrameId);
+            
+            gameOverUI.title.textContent = isWin ? "Parabéns!" : "Fim de Jogo";
+            gameOverUI.text.textContent = isWin ? `Você completou a fase ${state.level}!` : "Você ficou sem vidas!";
+            gameOverUI.score.textContent = state.score;
+            
+            if(isWin) {
+                // Prepara para a próxima fase
+                document.getElementById('btn-reiniciar').textContent = "Próxima Fase";
+                document.getElementById('btn-reiniciar').onclick = () => {
+                    state.level++;
+                    startGame();
+                };
+            } else {
+                document.getElementById('btn-reiniciar').textContent = "Jogar Novamente";
+                document.getElementById('btn-reiniciar').onclick = () => {
+                    state.level = 1;
+                    state.score = 0;
+                    startGame();
+                };
+            }
+            
+            showModal(modals.gameOver);
+        }
+
+        // --- LOOP PRINCIPAL DO JOGO ---
+        function gameLoop(timestamp) {
+            if (state.gameStatus !== 'playing') {
+                cancelAnimationFrame(state.animationFrameId);
+                return;
+            }
+            
+            const deltaTime = timestamp - state.lastAnimationTime;
+            if (deltaTime > 16) { // Limita a ~60 FPS
+                state.lastAnimationTime = timestamp;
+                
+                // Update
+                if(state.player) state.player.update();
+                state.enemies.forEach(e => e.update());
+                checkCollisions();
+
+                // Render
+                render();
+                
+                // Win Condition
+                if (state.collectibles.length === 0) {
+                    state.score += 50;
+                    showGameOver(true);
+                    return;
+                }
+            }
+            
+            state.animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- INICIALIZAÇÃO E CONTROLES ---
+        function startGame() {
+            state.gameStatus = 'playing';
+            state.lives = 3;
+            if(state.level === 1) state.score = 0; // Reseta score apenas no início
+            
+            // Redimensiona o canvas
+            const containerWidth = document.getElementById('game-container').clientWidth;
+            canvas.width = Math.min(600, containerWidth);
+            canvas.height = canvas.width;
+            
+            setupLevel(state.level);
+            updateHUD();
+            showModal(null);
+            
+            state.animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Controles do Teclado
+        window.addEventListener('keydown', e => {
+            if (state.gameStatus !== 'playing' || !state.player) return;
+            switch (e.key) {
+                case 'ArrowUp': case 'w': state.player.setDirection(0, -1); break;
+                case 'ArrowDown': case 's': state.player.setDirection(0, 1); break;
+                case 'ArrowLeft': case 'a': state.player.setDirection(-1, 0); break;
+                case 'ArrowRight': case 'd': state.player.setDirection(1, 0); break;
+            }
+        });
+        window.addEventListener('keyup', e => {
+            if (state.gameStatus !== 'playing' || !state.player) return;
+            // Para o movimento ao soltar a tecla (opcional, mas bom para precisão)
+            // state.player.setDirection(0, 0);
+        });
+        
+        // Controles de Toque
+        document.getElementById('up-btn').addEventListener('touchstart', (e) => { e.preventDefault(); if(state.player) state.player.setDirection(0, -1); });
+        document.getElementById('down-btn').addEventListener('touchstart', (e) => { e.preventDefault(); if(state.player) state.player.setDirection(0, 1); });
+        document.getElementById('left-btn').addEventListener('touchstart', (e) => { e.preventDefault(); if(state.player) state.player.setDirection(-1, 0); });
+        document.getElementById('right-btn').addEventListener('touchstart', (e) => { e.preventDefault(); if(state.player) state.player.setDirection(1, 0); });
+
+        // Listeners dos Botões da UI
+        document.getElementById('btn-jogar').addEventListener('click', () => {
+            initAudio(); // Inicializa o áudio na primeira interação
+            startGame();
+        });
+        document.getElementById('btn-como-jogar').addEventListener('click', () => showModal(modals.howToPlay));
+        document.getElementById('btn-creditos').addEventListener('click', () => showModal(modals.credits));
+        document.getElementById('btn-voltar-menu1').addEventListener('click', () => showModal(modals.start));
+        document.getElementById('btn-voltar-menu2').addEventListener('click', () => showModal(modals.start));
+        quizUI.btnContinuar.addEventListener('click', continueGame);
+        
+        quizUI.btnAprofundar.addEventListener('click', () => {
+            const painel = quizUI.painelAprofundar;
+            painel.classList.toggle('visivel');
+            if (painel.classList.contains('visivel')) {
+                painel.style.maxHeight = painel.scrollHeight + 'px';
+                 painel.style.padding = '15px';
+            } else {
+                painel.style.maxHeight = '0';
+                painel.style.padding = '0 15px';
+            }
+        });
+
+        // Exibe a tela inicial
+        showModal(modals.start);
+    });
+    </script>
+</body>
+</html>
