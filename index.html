@@ -63,6 +63,45 @@
             font-weight: bold;
         }
 
+        #hud .hud-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hud-button {
+            background: var(--cor-destaque);
+            color: var(--cor-primaria);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .hud-button.secondary {
+            background: var(--cor-secundaria);
+            color: var(--cor-texto);
+        }
+
+        .hud-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        }
+
+        #status-banner {
+            width: 100%;
+            background: rgba(10, 61, 98, 0.6);
+            border: 1px solid rgba(254, 202, 87, 0.5);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
         /* --- CANVAS DO JOGO --- */
         #gameCanvas {
             background-color: #000;
@@ -337,7 +376,13 @@
             <div>Pontos: <span id="pontos">0</span></div>
             <div>Itens: <span id="itens-restantes">0</span></div>
             <div>Fase: <span id="fase-atual">1</span></div>
+            <div class="hud-actions">
+                <button id="pause-btn" class="hud-button" aria-pressed="false">Pausar</button>
+                <button id="audio-btn" class="hud-button secondary" aria-pressed="false">Som: On</button>
+            </div>
         </div>
+
+        <div id="status-banner" aria-live="polite">Status: aguardando para jogar</div>
 
         <!-- Canvas do Jogo -->
         <canvas id="gameCanvas"></canvas>
@@ -435,6 +480,7 @@
             pontos: document.getElementById('pontos'),
             itensRestantes: document.getElementById('itens-restantes'),
             faseAtual: document.getElementById('fase-atual'),
+            statusBanner: document.getElementById('status-banner'),
         };
         const modals = {
             start: document.getElementById('start-screen'),
@@ -442,6 +488,10 @@
             credits: document.getElementById('credits-screen'),
             quiz: document.getElementById('quiz-modal'),
             gameOver: document.getElementById('game-over-screen'),
+        };
+        const controlButtons = {
+            pause: document.getElementById('pause-btn'),
+            audio: document.getElementById('audio-btn'),
         };
         const quizUI = {
             pergunta: document.getElementById('pergunta-texto'),
@@ -481,6 +531,8 @@
             lastAnimationTime: 0,
             animationFrameId: null,
         };
+
+        let audioEnabled = true;
 
         // --- BANCO DE PERGUNTAS ---
         const questionPool = [
@@ -967,7 +1019,7 @@
         }
 
         function playSound(type) {
-            if (!audioCtx) return;
+            if (!audioCtx || !audioEnabled) return;
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             oscillator.connect(gainNode);
@@ -1182,6 +1234,20 @@
             hud.pontos.textContent = state.score;
             hud.itensRestantes.textContent = state.collectibles.length;
             hud.faseAtual.textContent = state.level;
+            updateStatusBanner();
+        }
+
+        function updateStatusBanner() {
+            const statusMap = {
+                startScreen: 'aguardando para jogar',
+                playing: 'jogando',
+                paused: 'pausado',
+                quiz: 'respondendo ao quiz',
+                gameOver: 'fim de jogo',
+            };
+
+            const readableStatus = statusMap[state.gameStatus] || 'em andamento';
+            hud.statusBanner.textContent = `Status: ${readableStatus}`;
         }
         
         function showToast(message, type = 'success') {
@@ -1190,6 +1256,35 @@
             setTimeout(() => {
                 toast.className = '';
             }, 2000);
+        }
+
+        function togglePause(manualTrigger = true) {
+            if (!['playing', 'paused'].includes(state.gameStatus)) return;
+
+            if (state.gameStatus === 'playing') {
+                state.gameStatus = 'paused';
+                cancelAnimationFrame(state.animationFrameId);
+                controlButtons.pause.textContent = 'Retomar';
+                controlButtons.pause.setAttribute('aria-pressed', 'true');
+                if (manualTrigger) showToast('Jogo pausado', 'success');
+            } else {
+                state.gameStatus = 'playing';
+                state.lastAnimationTime = performance.now();
+                state.animationFrameId = requestAnimationFrame(gameLoop);
+                controlButtons.pause.textContent = 'Pausar';
+                controlButtons.pause.setAttribute('aria-pressed', 'false');
+                if (manualTrigger) showToast('Bons estudos! Jogo retomado.', 'success');
+            }
+
+            updateStatusBanner();
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            controlButtons.audio.textContent = audioEnabled ? 'Som: On' : 'Som: Off';
+            controlButtons.audio.setAttribute('aria-pressed', audioEnabled ? 'false' : 'true');
+            const feedback = audioEnabled ? 'Efeitos sonoros ativados.' : 'Efeitos sonoros desativados.';
+            showToast(feedback, audioEnabled ? 'success' : 'error');
         }
 
         function showModal(modal) {
@@ -1207,6 +1302,8 @@
                 newQuestion = questionPool[Math.floor(Math.random() * questionPool.length)];
             } while (newQuestion === state.currentQuestion);
             state.currentQuestion = newQuestion;
+
+            updateStatusBanner();
 
             // Reset UI do Quiz
             quizUI.pergunta.textContent = state.currentQuestion.pergunta;
@@ -1322,10 +1419,12 @@
         }
 
         function continueGame() {
-            if (state.gameStatus !== 'gameOver') {
+            if (state.gameStatus === 'quiz') {
                 state.gameStatus = 'playing';
                 showModal(null);
-                gameLoop();
+                state.lastAnimationTime = performance.now();
+                state.animationFrameId = requestAnimationFrame(gameLoop);
+                updateStatusBanner();
             }
         }
         
@@ -1353,7 +1452,8 @@
                     startGame();
                 };
             }
-            
+
+            updateStatusBanner();
             showModal(modals.gameOver);
         }
 
@@ -1392,7 +1492,10 @@
             state.gameStatus = 'playing';
             state.lives = 3;
             if(state.level === 1) state.score = 0; // Reseta score apenas no início
-            
+
+            controlButtons.pause.textContent = 'Pausar';
+            controlButtons.pause.setAttribute('aria-pressed', 'false');
+
             // Redimensiona o canvas
             const containerWidth = document.getElementById('game-container').clientWidth;
             canvas.width = Math.min(600, containerWidth);
@@ -1401,7 +1504,9 @@
             setupLevel(state.level);
             updateHUD();
             showModal(null);
-            
+
+            state.lastAnimationTime = performance.now();
+
             state.animationFrameId = requestAnimationFrame(gameLoop);
         }
 
@@ -1416,6 +1521,14 @@
             }
         });
         window.addEventListener('keyup', e => {
+            if (e.key.toLowerCase() === 'p') {
+                togglePause();
+                return;
+            }
+            if (e.key.toLowerCase() === 'm') {
+                toggleAudio();
+                return;
+            }
             if (state.gameStatus !== 'playing' || !state.player) return;
             // Para o movimento ao soltar a tecla (opcional, mas bom para precisão)
             // state.player.setDirection(0, 0);
@@ -1437,7 +1550,9 @@
         document.getElementById('btn-voltar-menu1').addEventListener('click', () => showModal(modals.start));
         document.getElementById('btn-voltar-menu2').addEventListener('click', () => showModal(modals.start));
         quizUI.btnContinuar.addEventListener('click', continueGame);
-        
+        controlButtons.pause.addEventListener('click', () => togglePause());
+        controlButtons.audio.addEventListener('click', () => toggleAudio());
+
         quizUI.btnAprofundar.addEventListener('click', () => {
             const painel = quizUI.painelAprofundar;
             painel.classList.toggle('visivel');
@@ -1452,6 +1567,7 @@
 
         // Exibe a tela inicial
         showModal(modals.start);
+        updateStatusBanner();
     });
     </script>
 </body>
