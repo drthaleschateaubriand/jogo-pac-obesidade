@@ -326,6 +326,60 @@
         #toast.success { background-color: var(--cor-sucesso); }
         #toast.error { background-color: var(--cor-erro); }
 
+
+        /* --- PAINEL DE TENDÊNCIAS DE NUTROLOGIA --- */
+        #trends-screen .modal-content {
+            width: min(96vw, 980px);
+            max-height: 92vh;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .trend-intro {
+            background: rgba(255, 255, 255, 0.08);
+            border-left: 4px solid var(--cor-destaque);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+        }
+
+        .trend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .trend-card {
+            background: rgba(0, 0, 0, 0.22);
+            border: 1px solid rgba(254, 202, 87, 0.35);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .trend-card h3 {
+            color: var(--cor-destaque);
+            font-size: 1.05rem;
+            margin-bottom: 10px;
+        }
+
+        .trend-card p, .trend-card li {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .trend-card ul {
+            padding-left: 18px;
+            margin: 8px 0;
+        }
+
+        .trend-source {
+            display: inline-block;
+            color: var(--cor-destaque);
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
     </style>
 </head>
 <body>
@@ -362,6 +416,7 @@
                 <button id="btn-jogar" class="modal-button">Jogar</button>
                 <button id="btn-como-jogar" class="modal-button secondary">Como Jogar</button>
                 <button id="btn-creditos" class="modal-button secondary">Créditos</button>
+                <button id="btn-tendencias" class="modal-button secondary">Temas atuais no Instagram</button>
             </div>
         </div>
     </div>
@@ -376,6 +431,68 @@
             <p><strong>Quiz:</strong> Se acertar a pergunta, você escapa! Se errar, perde uma vida e volta ao início.</p>
             <p><strong>Dica:</strong> Após cada pergunta, use o botão "Aprofundar no assunto" para aprender mais!</p>
             <button id="btn-voltar-menu1" class="modal-button">Voltar</button>
+        </div>
+    </div>
+
+
+
+    <!-- Tela de Tendências de Nutrologia (Modal) -->
+    <div id="trends-screen" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2>Nutrologia no Instagram: temas em alta</h2>
+            <p class="trend-intro"><strong>Curadoria atualizada em 16/07/2026:</strong> resumo educativo de Reels e posts recentes encontrados em busca pública. Use como pauta de comunicação em saúde; decisões terapêuticas exigem avaliação médica individual.</p>
+            <p><a class="modal-button" href="docs/resumo-nutrologia-instagram.pdf" download>Baixar documento em PDF</a></p>
+            <div class="trend-grid">
+                <article class="trend-card">
+                    <h3>1. GLP-1 oral e orforgliprona</h3>
+                    <p><strong>Resumo do vídeo:</strong> apresenta a orforgliprona como possível avanço por ser agonista de GLP-1 não peptídico e oral, reforçando praticidade e potencial impacto no tratamento da obesidade.</p>
+                    <ul><li>Gancho: “emagrecimento sem injeção”.</li><li>Mensagem segura: explicar indicação, efeitos adversos e necessidade de acompanhamento.</li></ul>
+                    <a class="trend-source" href="https://www.instagram.com/reel/DaLIUA-NF3y/" target="_blank" rel="noopener noreferrer">Fonte: Reel público</a>
+                </article>
+                <article class="trend-card">
+                    <h3>2. Manutenção de peso após GLP-1</h3>
+                    <p><strong>Resumo do vídeo:</strong> discute que, após perda ponderal com agonistas de GLP-1, a conduta precisa ir além da balança: preservar massa magra, ajustar dieta, treino e plano de longo prazo.</p>
+                    <ul><li>Gancho: “e depois que emagrece?”.</li><li>Mensagem segura: evitar suspensão sem estratégia nutricional e clínica.</li></ul>
+                    <a class="trend-source" href="https://www.instagram.com/reel/Dai7EcNqCGQ/" target="_blank" rel="noopener noreferrer">Fonte: Reel público</a>
+                </article>
+                <article class="trend-card">
+                    <h3>3. Duplo-agonistas e fígado gorduroso</h3>
+                    <p><strong>Resumo do vídeo:</strong> destaca dados de congresso sobre duplo-agonistas GLP-1/glucagon, com foco em perda de peso e melhora de doença hepática esteatótica metabólica.</p>
+                    <ul><li>Gancho: “obesidade e gordura no fígado juntas”.</li><li>Mensagem segura: rastrear risco cardiometabólico e não prometer cura.</li></ul>
+                    <a class="trend-source" href="https://www.instagram.com/reel/DaA0Sm7uHdK/" target="_blank" rel="noopener noreferrer">Fonte: Reel público</a>
+                </article>
+                <article class="trend-card">
+                    <h3>4. Semaglutida em dose maior e resposta lenta</h3>
+                    <p><strong>Resumo do vídeo:</strong> enfatiza que resposta inicial lenta à semaglutida não significa fracasso; o acompanhamento deve considerar tempo, adesão, dose, tolerância e metas realistas.</p>
+                    <ul><li>Gancho: “não desista cedo demais”.</li><li>Mensagem segura: individualizar progressão e monitorar eventos gastrointestinais.</li></ul>
+                    <a class="trend-source" href="https://www.instagram.com/reel/DYUZVEMgNPe/" target="_blank" rel="noopener noreferrer">Fonte: Reel público</a>
+                </article>
+                <article class="trend-card">
+                    <h3>5. Emagrecimento feminino multifatorial</h3>
+                    <p><strong>Resumo do vídeo:</strong> reposiciona o emagrecimento feminino como resultado de sono, saúde emocional, rotina, hormônios, autocuidado e adesão, não apenas restrição calórica.</p>
+                    <ul><li>Gancho: “não é só dieta”.</li><li>Mensagem segura: investigar ciclo, climatério, compulsão, estresse e sarcopenia.</li></ul>
+                    <a class="trend-source" href="https://www.instagram.com/reel/DVqqNQBkVqL/" target="_blank" rel="noopener noreferrer">Fonte: Reel público</a>
+                </article>
+                <article class="trend-card">
+                    <h3>6. Menopausa, climatério e composição corporal</h3>
+                    <p><strong>Resumo do vídeo:</strong> usa a chegada de uma nutróloga para divulgar cuidado integrado em menopausa, emagrecimento, lipedema, saúde hormonal e vitaminas/minerais.</p>
+                    <ul><li>Gancho: “corpo mudou depois dos 40”.</li><li>Mensagem segura: diferenciar reposição bem indicada de promessas estéticas.</li></ul>
+                    <a class="trend-source" href="https://www.instagram.com/reel/DYUmZMLNTPv/" target="_blank" rel="noopener noreferrer">Fonte: Reel público</a>
+                </article>
+                <article class="trend-card">
+                    <h3>7. Nutrologia além da alimentação</h3>
+                    <p><strong>Resumo do vídeo:</strong> explica a nutrologia como investigação de metabolismo, saúde intestinal, inflamação e hormônios para personalizar o plano de tratamento.</p>
+                    <ul><li>Gancho: “por que a dieta não funciona igual para todos?”.</li><li>Mensagem segura: combinar anamnese, exames pertinentes e educação alimentar.</li></ul>
+                    <a class="trend-source" href="https://www.instagram.com/reel/DadsqHzsgpu/" target="_blank" rel="noopener noreferrer">Fonte: Reel público</a>
+                </article>
+                <article class="trend-card">
+                    <h3>8. Tirzepatida, acesso e regulação</h3>
+                    <p><strong>Resumo do vídeo:</strong> aborda a tirzepatida como terapia potente para obesidade, mas insere o debate sobre acesso, custo, indicação correta e regulação.</p>
+                    <ul><li>Gancho: “medicação desejada, mas não para todos”.</li><li>Mensagem segura: evitar banalização e orientar acompanhamento longitudinal.</li></ul>
+                    <a class="trend-source" href="https://www.instagram.com/p/DYgCb-7RaXj/" target="_blank" rel="noopener noreferrer">Fonte: post público</a>
+                </article>
+            </div>
+            <button id="btn-voltar-menu3" class="modal-button">Voltar</button>
         </div>
     </div>
 
@@ -440,6 +557,7 @@
             start: document.getElementById('start-screen'),
             howToPlay: document.getElementById('how-to-play-screen'),
             credits: document.getElementById('credits-screen'),
+            trends: document.getElementById('trends-screen'),
             quiz: document.getElementById('quiz-modal'),
             gameOver: document.getElementById('game-over-screen'),
         };
@@ -1434,8 +1552,10 @@
         });
         document.getElementById('btn-como-jogar').addEventListener('click', () => showModal(modals.howToPlay));
         document.getElementById('btn-creditos').addEventListener('click', () => showModal(modals.credits));
+        document.getElementById('btn-tendencias').addEventListener('click', () => showModal(modals.trends));
         document.getElementById('btn-voltar-menu1').addEventListener('click', () => showModal(modals.start));
         document.getElementById('btn-voltar-menu2').addEventListener('click', () => showModal(modals.start));
+        document.getElementById('btn-voltar-menu3').addEventListener('click', () => showModal(modals.start));
         quizUI.btnContinuar.addEventListener('click', continueGame);
         
         quizUI.btnAprofundar.addEventListener('click', () => {
